@@ -59,6 +59,8 @@ class Rabbit
     int    m_row;
     int    m_col;
     bool   m_dead;
+    bool   m_poisoned;
+    bool   m_hasMoved;
       // TODO: You'll probably find that a rabbit object needs additional
       // data members to support your implementation of the behavior affected
       // by poisoned carrots.
@@ -170,6 +172,8 @@ Rabbit::Rabbit(Arena* ap, int r, int c)
     m_arena = ap;
     m_row = r;
     m_col = c;
+    m_poisoned=false;
+    m_hasMoved=false;
     m_dead = false;
 }
 
@@ -190,6 +194,28 @@ bool Rabbit::isDead() const
 
 void Rabbit::move()
 {
+    int dir = randInt(1, NUMDIRS);
+    if(m_poisoned&&m_hasMoved){
+        m_hasMoved=false;
+        return;
+    }
+    if(dir==1){
+        if(row()-1>0)m_row-=1;
+    }
+    else if(dir==2){
+        if(col()+1<=m_arena->cols())m_col+=1;
+    }
+    else if(dir==3){
+        if(row()+1<=m_arena->rows())m_row+=1;
+    }
+    else
+        if(col()-1>0)m_col-=1;
+    
+    if(m_arena->getCellStatus(row(),col())=='c'){
+        m_arena->setCellStatus(row(), col(), '.');
+        m_poisoned=true;
+    }
+    m_hasMoved = true;
       // TODO:
       //   Return without moving if the rabbit has eaten one poisoned
       //   carrot (so is supposed to move only every other turn) and
@@ -341,7 +367,7 @@ void Arena::display(string msg) const
         for (c = 1; c <= cols(); c++){
             if(numberOfRabbitsAt(r,c)==1)displayGrid[r-1][c-1]='R';
             else if(numberOfRabbitsAt(r,c)>=9)displayGrid[r-1][c-1]='9';
-            else displayGrid[r-1][c-1]=(char)('0'+numberOfRabbitsAt(r,c));
+            else if(numberOfRabbitsAt(r,c)>=2) displayGrid[r-1][c-1]=(char)('0'+numberOfRabbitsAt(r,c));
         }
     }
       // Indicate the player's position
@@ -416,6 +442,9 @@ bool Arena::addPlayer(int r, int c)
 
 void Arena::moveRabbits()
 {
+    for(int i=0;i<m_nRabbits;i++){
+        m_rabbits[i]->move();
+    }
       // Move all rabbits
       // TODO:  Move each rabbit.  Mark the player as dead if necessary.
       //        Deallocate any dead dynamically allocated rabbit.
