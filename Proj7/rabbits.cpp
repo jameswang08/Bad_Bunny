@@ -278,21 +278,38 @@ string Player::move(int dir)
       //        Otherwise, return one of "Player moved north.",
       //        "Player moved east.", "Player moved south.", or
       //        "Player moved west."
+      //        STILL NEED TO IMPLEMENT DEATH
     if(attemptMove(*m_arena, dir, m_row, m_col)){
         if(dir==NORTH){
             m_row-=1;
+            if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
+                m_dead=true;
+                return "Player walked into a rabbit and died.";
+            }
             return "Player moved north.";
         }
         else if(dir==EAST){
             m_col+=1;
+            if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
+                m_dead=true;
+                return "Player walked into a rabbit and died.";
+            }
             return "Player moved east.";
         }
         else if(dir==SOUTH){
             m_row+=1;
+            if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
+                m_dead=true;
+                return "Player walked into a rabbit and died.";
+            }
             return "Player moved south.";
         }
         else
             m_col-=1;
+            if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
+                m_dead=true;
+                return "Player walked into a rabbit and died.";
+            }
             return "Player moved west.";
     }
     return "Player couldn't move; player stands.";  // This implementation compiles, but is incorrect.
