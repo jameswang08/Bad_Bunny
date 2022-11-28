@@ -194,21 +194,21 @@ bool Rabbit::isDead() const
 
 void Rabbit::move()
 {
-    int dir = randInt(1, NUMDIRS);
+    int dir = randInt(0, NUMDIRS-1);
     if(m_poisoned&&m_hasMoved){
         m_hasMoved=false;
         return;
     }
-    if(dir==1){
+    if(dir==NORTH){
         if(row()-1>0)m_row-=1;
     }
-    else if(dir==2){
+    else if(dir==EAST){
         if(col()+1<=m_arena->cols())m_col+=1;
     }
-    else if(dir==3){
+    else if(dir==SOUTH){
         if(row()+1<=m_arena->rows())m_row+=1;
     }
-    else
+    else if(dir==WEST)
         if(col()-1>0)m_col-=1;
     
     if(m_arena->getCellStatus(row(),col())=='c'){
@@ -278,6 +278,23 @@ string Player::move(int dir)
       //        Otherwise, return one of "Player moved north.",
       //        "Player moved east.", "Player moved south.", or
       //        "Player moved west."
+    if(attemptMove(*m_arena, dir, m_row, m_col)){
+        if(dir==NORTH){
+            m_row-=1;
+            return "Player moved north.";
+        }
+        else if(dir==EAST){
+            m_col+=1;
+            return "Player moved east.";
+        }
+        else if(dir==SOUTH){
+            m_row+=1;
+            return "Player moved south.";
+        }
+        else
+            m_col-=1;
+            return "Player moved west.";
+    }
     return "Player couldn't move; player stands.";  // This implementation compiles, but is incorrect.
 }
 
@@ -531,10 +548,8 @@ string Game::takePlayerTurn()
         cout << "Your move (n/e/s/w/c or nothing): ";
         string playerMove;
         getline(cin, playerMove);
-
         Player* player = m_arena->player();
         int dir;
-
         if (playerMove.size() == 0)
         {
             if (recommendMove(*m_arena, player->row(), player->col(), dir))
@@ -546,8 +561,9 @@ string Game::takePlayerTurn()
         {
             if (tolower(playerMove[0]) == 'c')
                 return player->dropPoisonedCarrot();
-            else if (decodeDirection(playerMove[0], dir))
+            else if (decodeDirection(playerMove[0], dir)){
                 return player->move(dir);
+            }
         }
         cout << "Player move must be nothing, or 1 character n/e/s/w/c." << endl;
     }
@@ -609,6 +625,14 @@ bool decodeDirection(char ch, int& dir)
 bool attemptMove(const Arena& a, int dir, int& r, int& c)
 {
       // TODO:  Implement this function
+    if(dir==NORTH&&r-1>0)
+        return true;
+    else if(dir==EAST&&c+1<=a.cols())
+        return true;
+    else if(dir==SOUTH&&r+1<=a.rows())
+        return true;
+    else if(dir==WEST&&c-1>0)
+        return true;
       // Delete the following line and replace it with the correct code.
     return false;  // This implementation compiles, but is incorrect.
 }
@@ -653,7 +677,6 @@ int main()
       // Use this instead to create a mini-game: Game g(3, 5, 2);
       //Big is Game g(10, 12, 40)
     Game g(3, 5, 2);
-
       // Play the game
     g.play();
 }
