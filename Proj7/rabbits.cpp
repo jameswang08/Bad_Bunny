@@ -478,6 +478,9 @@ void Arena::moveRabbits()
 {
     for(int i=0;i<m_nRabbits;i++){
         m_rabbits[i]->move();
+        if(m_rabbits[i]->row()==m_player->row()&&m_rabbits[i]->col()==m_player->col()){
+            m_player->setDead();
+        }
     }
       // Move all rabbits
       // TODO:  Move each rabbit.  Mark the player as dead if necessary.
@@ -641,7 +644,6 @@ bool decodeDirection(char ch, int& dir)
   // return true.
 bool attemptMove(const Arena& a, int dir, int& r, int& c)
 {
-      // TODO:  Implement this function
     if(dir==NORTH&&r-1>0)
         return true;
     else if(dir==EAST&&c+1<=a.cols())
@@ -650,8 +652,7 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
         return true;
     else if(dir==WEST&&c-1>0)
         return true;
-      // Delete the following line and replace it with the correct code.
-    return false;  // This implementation compiles, but is incorrect.
+    return false;
 }
 
   // Recommend a move for a player at (r,c):  A false return means the
