@@ -61,9 +61,6 @@ class Rabbit
     bool   m_dead;
     bool   m_poisoned;
     bool   m_hasMoved;
-      // TODO: You'll probably find that a rabbit object needs additional
-      // data members to support your implementation of the behavior affected
-      // by poisoned carrots.
 };
 
 class Player
@@ -151,6 +148,7 @@ bool decodeDirection(char ch, int& dir);
 bool attemptMove(const Arena& a, int dir, int& r, int& c);
 bool recommendMove(const Arena& a, int r, int c, int& bestDir);
 void clearScreen();
+int dangerLvl(const Arena& a, int r, int c);
 
 ///////////////////////////////////////////////////////////////////////////
 //  Rabbit implementation
@@ -211,20 +209,17 @@ void Rabbit::move()
     else if(dir==WEST)
         if(col()-1>0)m_col-=1;
     
-    if(m_arena->getCellStatus(row(),col())=='c'){
-        m_arena->setCellStatus(row(), col(), '.');
-        m_poisoned=true;
+    if(m_arena->getCellStatus(row(),col())==HAS_POISON){
+        m_arena->setCellStatus(row(), col(), EMPTY);
+        if(m_poisoned){
+            m_dead=true;
+            if(m_row==m_arena->player()->row()&&m_col==m_arena->player()->col()){
+                m_arena->player()->setDead();
+            }
+        }
+        else m_poisoned=true;
     }
     m_hasMoved = true;
-      // TODO:
-      //   Return without moving if the rabbit has eaten one poisoned
-      //   carrot (so is supposed to move only every other turn) and
-      //   this is a turn it does not move.
-
-      //   Otherwise, attempt to move in a random direction; if can't
-      //   move, don't move.  If it lands on a poisoned carrot, eat the
-      //   carrot and remove it from the game (so it is no longer on that
-      //   grid point).
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -270,15 +265,6 @@ string Player::dropPoisonedCarrot()
 
 string Player::move(int dir)
 {
-      // TODO:  Attempt to move the player one step in the indicated
-      //        direction.  If this fails,
-      //        return "Player couldn't move; player stands."
-      //        A player who moves onto a rabbit, and this
-      //        returns "Player walked into a rabbit and died."
-      //        Otherwise, return one of "Player moved north.",
-      //        "Player moved east.", "Player moved south.", or
-      //        "Player moved west."
-      //        STILL NEED TO IMPLEMENT DEATH
     if(attemptMove(*m_arena, dir, m_row, m_col)){
         if(dir==NORTH){
             m_row-=1;
@@ -349,8 +335,10 @@ Arena::Arena(int nRows, int nCols)
 
 Arena::~Arena()
 {
-    // TODO:  Deallocate the player and all remaining dynamically allocated
-    //        rabbits.
+    delete m_player;
+    for(int i=0;i<m_nRabbits;i++){
+        delete m_rabbits[i];
+    }
 }
 
 int Arena::rows() const
@@ -421,7 +409,8 @@ void Arena::display(string msg) const
       // Write message, rabbit, and player info
     if (msg != "")
         cout << msg << endl;
-    cout << "There are " << rabbitCount() << " rabbits remaining." << endl;
+    if(rabbitCount()==1) cout << "There is " << rabbitCount() << " rabbit remaining." << endl;
+    else cout << "There are " << rabbitCount() << " rabbits remaining." << endl;
     if (m_player == nullptr)
         cout << "There is no player!" << endl;
     else if (m_player->isDead())
@@ -481,12 +470,14 @@ void Arena::moveRabbits()
         if(m_rabbits[i]->row()==m_player->row()&&m_rabbits[i]->col()==m_player->col()){
             m_player->setDead();
         }
+        while(m_rabbits[i]->isDead()){
+            delete m_rabbits[i];
+            m_nRabbits--;
+            if(i<m_nRabbits)
+                m_rabbits[i]=m_rabbits[m_nRabbits];
+            else break;
+        }
     }
-      // Move all rabbits
-      // TODO:  Move each rabbit.  Mark the player as dead if necessary.
-      //        Deallocate any dead dynamically allocated rabbit.
-
-      // Another turn has been taken
     m_turns++;
 }
 
@@ -661,8 +652,40 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
   // direction to move and returns true.
 bool recommendMove(const Arena& a, int r, int c, int& bestDir)
 {
-      // TODO:  Implement this function
-      // Delete the following line and replace it with your code.
+    int dangerArr[NUMDIRS] = {};
+    
+    if(dangerLvl(a,r,c)==0) return false;
+    else{
+        for(int i=0;i<NUMDIRS;i++){
+            if(attemptMove(a, i, r, c)){
+                int r2=0;
+                int c2=0;
+                if(i==0)r2=-1;
+                else if(i==1)c2=1;
+                else if(i==2)r2=1;
+                else c2=-1;
+                if(a.numberOfRabbitsAt(r+r2,c+c2)>0) dangerArr[i]=-1;
+                else dangerArr[i]=dangerLvl(a,r+r2,c+c2);
+            }
+            else dangerArr[i]=-1;
+        }
+        int min = -1;
+        for(int i=0;i<NUMDIRS;i++){
+            if(dangerArr[i]!=-1){
+                min = dangerArr[i];
+                break;
+            }
+        }
+        if(min==-1) return false;
+        bestDir = 69420;
+        for(int i=0;i<NUMDIRS;i++){
+            if(dangerArr[i]<=min&&dangerArr[i]!=-1){
+                min = dangerArr[i];
+                bestDir = i;
+            }
+        }
+        return true;
+    }
     return false;  // This implementation compiles, but is incorrect.
 
       // Your replacement implementation should do something intelligent.
@@ -685,6 +708,24 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
       // we're not asking you to do.
 }
 
+int dangerLvl(const Arena& a, int r, int c){
+    int danger=0;
+    if(attemptMove(a, NORTH, r, c)){
+        if(a.numberOfRabbitsAt(r-1, c)>0)danger++;
+    }
+   if(attemptMove(a, EAST, r, c)){
+        if(a.numberOfRabbitsAt(r, c+1)>0)danger++;
+    }
+    if(attemptMove(a, SOUTH, r, c)){
+        if(a.numberOfRabbitsAt(r+1, c)>0)danger++;
+    }
+    if(attemptMove(a, WEST, r, c)){
+        if(a.numberOfRabbitsAt(r, c-1)>0)danger++;
+    }
+    return danger;
+}
+
+
 ///////////////////////////////////////////////////////////////////////////
 // main()
 ///////////////////////////////////////////////////////////////////////////
@@ -693,8 +734,7 @@ int main()
 {
       // Create a game
       // Use this instead to create a mini-game: Game g(3, 5, 2);
-      //Big is Game g(10, 12, 40)
-    Game g(3, 5, 2);
+    Game g(10, 12, 40);
       // Play the game
     g.play();
 }
