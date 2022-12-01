@@ -149,6 +149,8 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c);
 bool recommendMove(const Arena& a, int r, int c, int& bestDir);
 void clearScreen();
 int dangerLvl(const Arena& a, int r, int c);
+bool attempt(const Arena& a, int dir, int& r, int& c);
+
 
 ///////////////////////////////////////////////////////////////////////////
 //  Rabbit implementation
@@ -267,7 +269,6 @@ string Player::move(int dir)
 {
     if(attemptMove(*m_arena, dir, m_row, m_col)){
         if(dir==NORTH){
-            m_row-=1;
             if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
                 m_dead=true;
                 return "Player walked into a rabbit and died.";
@@ -275,7 +276,6 @@ string Player::move(int dir)
             return "Player moved north.";
         }
         else if(dir==EAST){
-            m_col+=1;
             if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
                 m_dead=true;
                 return "Player walked into a rabbit and died.";
@@ -283,20 +283,19 @@ string Player::move(int dir)
             return "Player moved east.";
         }
         else if(dir==SOUTH){
-            m_row+=1;
             if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
                 m_dead=true;
                 return "Player walked into a rabbit and died.";
             }
             return "Player moved south.";
         }
-        else
-            m_col-=1;
+        else{
             if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
                 m_dead=true;
                 return "Player walked into a rabbit and died.";
             }
             return "Player moved west.";
+        }
     }
     return "Player couldn't move; player stands.";  // This implementation compiles, but is incorrect.
 }
@@ -635,14 +634,22 @@ bool decodeDirection(char ch, int& dir)
   // return true.
 bool attemptMove(const Arena& a, int dir, int& r, int& c)
 {
-    if(dir==NORTH&&r-1>0)
+    if(dir==NORTH&&r-1>0){
+        r-=1;
         return true;
-    else if(dir==EAST&&c+1<=a.cols())
+    }
+    else if(dir==EAST&&c+1<=a.cols()){
+        c+=1;
         return true;
-    else if(dir==SOUTH&&r+1<=a.rows())
+    }
+    else if(dir==SOUTH&&r+1<=a.rows()){
+        r+=1;
         return true;
-    else if(dir==WEST&&c-1>0)
+    }
+    else if(dir==WEST&&c-1>0){
+        c-=1;
         return true;
+    }
     return false;
 }
 
@@ -657,7 +664,7 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
     if(dangerLvl(a,r,c)==0) return false;
     else{
         for(int i=0;i<NUMDIRS;i++){
-            if(attemptMove(a, i, r, c)){
+            if(attempt(a, i, r, c)){
                 int r2=0;
                 int c2=0;
                 if(i==0)r2=-1;
@@ -677,11 +684,17 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
             }
         }
         if(min==-1) return false;
-        bestDir = 69420;
         for(int i=0;i<NUMDIRS;i++){
             if(dangerArr[i]<=min&&dangerArr[i]!=-1){
-                min = dangerArr[i];
+                min = dangerArr[i]%10;
                 bestDir = i;
+            }
+        }
+        for(int i=0;i<NUMDIRS;i++){
+            if(dangerArr[i]%10==min){
+                if(dangerArr[i]!=dangerArr[bestDir]&&dangerArr[i]<dangerArr[bestDir]){
+                    bestDir = i;
+                }
             }
         }
         return true;
@@ -710,31 +723,58 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
 
 int dangerLvl(const Arena& a, int r, int c){
     int danger=0;
-    if(attemptMove(a, NORTH, r, c)){
-        if(a.numberOfRabbitsAt(r-1, c)>0)danger++;
+    if(attempt(a, NORTH, r, c)){
+        if(a.numberOfRabbitsAt(r-1, c)>0){
+            danger+=a.numberOfRabbitsAt(r-1, c)*10;
+            danger++;
+        }
     }
-   if(attemptMove(a, EAST, r, c)){
-        if(a.numberOfRabbitsAt(r, c+1)>0)danger++;
+   if(attempt(a, EAST, r, c)){
+        if(a.numberOfRabbitsAt(r, c+1)>0){
+            danger+=a.numberOfRabbitsAt(r, c+1)*10;
+            danger++;
+        }
     }
-    if(attemptMove(a, SOUTH, r, c)){
-        if(a.numberOfRabbitsAt(r+1, c)>0)danger++;
+    if(attempt(a, SOUTH, r, c)){
+        if(a.numberOfRabbitsAt(r+1, c)>0){
+            danger+=a.numberOfRabbitsAt(r+1, c)*10;
+            danger++;
+        }
     }
-    if(attemptMove(a, WEST, r, c)){
-        if(a.numberOfRabbitsAt(r, c-1)>0)danger++;
+    if(attempt(a, WEST, r, c)){
+        if(a.numberOfRabbitsAt(r, c-1)>0){
+            danger+=a.numberOfRabbitsAt(r, c-1)*10;
+            danger++;
+        }
     }
     return danger;
+}
+bool attempt(const Arena& a, int dir, int& r, int& c){
+    if(dir==NORTH&&r-1>0)
+        return true;
+    else if(dir==EAST&&c+1<=a.cols())
+        return true;
+    else if(dir==SOUTH&&r+1<=a.rows())
+        return true;
+    else if(dir==WEST&&c-1>0)
+        return true;
+    
+    return false;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////
 // main()
 ///////////////////////////////////////////////////////////////////////////
-
+//void doBasicTests();
 int main()
 {
+//    doBasicTests(); // Remove this line after completing test.
+//    return 0;       // Remove this line after completing test.
       // Create a game
-      // Use this instead to create a mini-game: Game g(3, 5, 2);
-    Game g(10, 12, 40);
+      // Use this instead to create a mini-game:
+    //Game g(3, 5, 2);
+    Game g(10, 12, 20);
       // Play the game
     g.play();
 }
@@ -787,3 +827,179 @@ void clearScreen()  // will just write a newline in an Xcode output window
 }
 
 #endif
+
+//#include <type_traits>
+//#include <cassert>
+//
+//#define CHECKTYPE(c, f, r, a)  \
+//    static_assert(std::is_same<decltype(&c::f), r (c::*)a>::value, \
+//       "FAILED: You changed the type of " #c "::" #f);  \
+//    { [[gnu::unused]] auto p = static_cast<r (c::*) a>(&c::f); }
+//
+//void thisFunctionWillNeverBeCalled()
+//{
+//      // If the student deleted or changed the interfaces to the public
+//      // functions, this won't compile.  (This uses magic beyond the scope
+//      // of CS 31.)
+//
+//    Rabbit r(static_cast<Arena*>(0), 1, 1);
+//    CHECKTYPE(Rabbit, row, int, () const);
+//    CHECKTYPE(Rabbit, col, int, () const);
+//    CHECKTYPE(Rabbit, isDead, bool, () const);
+//    CHECKTYPE(Rabbit, move, void, ());
+//
+//    Player p(static_cast<Arena*>(0), 1, 1);
+//    CHECKTYPE(Player, row, int, () const);
+//    CHECKTYPE(Player, col, int, () const);
+//    CHECKTYPE(Player, isDead, bool, () const);
+//    CHECKTYPE(Player, dropPoisonedCarrot, string, ());
+//    CHECKTYPE(Player, move, string, (int));
+//    CHECKTYPE(Player, setDead, void, ());
+//
+//    Arena a(1, 1);
+//    CHECKTYPE(Arena, rows, int, () const);
+//    CHECKTYPE(Arena, cols, int, () const);
+//    CHECKTYPE(Arena, player, Player*, () const);
+//    CHECKTYPE(Arena, rabbitCount, int, () const);
+//    CHECKTYPE(Arena, getCellStatus, int, (int,int) const);
+//    CHECKTYPE(Arena, numberOfRabbitsAt, int, (int,int) const);
+//    CHECKTYPE(Arena, display, void, (string) const);
+//    CHECKTYPE(Arena, setCellStatus, void, (int,int,int));
+//    CHECKTYPE(Arena, addRabbit, bool, (int,int));
+//    CHECKTYPE(Arena, addPlayer, bool, (int,int));
+//    CHECKTYPE(Arena, moveRabbits, void, ());
+//
+//    Game g(1,1,1);
+//    CHECKTYPE(Game, play, void, ());
+//}
+//
+//void findTheRabbit(const Arena& a, int& r, int& c)
+//{
+//    if      (a.numberOfRabbitsAt(r-1, c) == 1) r--;
+//    else if (a.numberOfRabbitsAt(r+1, c) == 1) r++;
+//    else if (a.numberOfRabbitsAt(r, c-1) == 1) c--;
+//    else if (a.numberOfRabbitsAt(r, c+1) == 1) c++;
+//    else assert(false);
+//}
+//
+//void surroundWithPoison(Arena& a, int r, int c)
+//{
+//    a.setCellStatus(r-1, c, HAS_POISON);
+//    a.setCellStatus(r+1, c, HAS_POISON);
+//    a.setCellStatus(r, c-1, HAS_POISON);
+//    a.setCellStatus(r, c+1, HAS_POISON);
+//}
+//
+//void doBasicTests()
+//{
+//    {
+//        Arena a(10, 20);
+//        assert(a.addPlayer(2, 5));
+//        Player* pp = a.player();
+//        assert(pp->row() == 2  &&  pp->col() == 5  && ! pp->isDead());
+//        assert(pp->move(NORTH) == "Player moved north.");
+//        assert(pp->row() == 1  &&  pp->col() == 5  && ! pp->isDead());
+//        assert(pp->move(NORTH) == "Player couldn't move; player stands.");
+//        assert(pp->row() == 1  &&  pp->col() == 5  && ! pp->isDead());
+//        pp->setDead();
+//        assert(pp->row() == 1  &&  pp->col() == 5  && pp->isDead());
+//    }
+//    {
+//        Arena a(10, 20);
+//        int r = 8;
+//        int c = 18;
+//        assert(a.addPlayer(r, c));
+//        for (int k = 0; k < MAXRABBITS/4; k++)
+//        {
+//            assert(a.addRabbit(r-1, c));
+//            assert(a.addRabbit(r+1, c));
+//            assert(a.addRabbit(r, c-1));
+//            assert(a.addRabbit(r, c+1));
+//        }
+//        assert(! a.player()->isDead());
+//        a.moveRabbits();
+//        assert(a.player()->isDead());
+//    }
+//    {
+//        Arena a(10, 20);
+//        int r = 4;
+//        int c = 4;
+//        assert(a.addRabbit(r, c));
+//        surroundWithPoison(a, r, c);
+//        assert(a.addPlayer(8, 18));
+//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 1);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 0);
+//        findTheRabbit(a, r, c);
+//        assert(a.getCellStatus(r, c) != HAS_POISON);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 1);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 0);
+//        findTheRabbit(a, r, c);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 1);
+//        surroundWithPoison(a, r, c);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == 0  &&  a.numberOfRabbitsAt(r, c) == 0);
+//        assert(a.numberOfRabbitsAt(r-1, c) == 0);
+//        assert(a.numberOfRabbitsAt(r+1, c) == 0);
+//        assert(a.numberOfRabbitsAt(r, c-1) == 0);
+//        assert(a.numberOfRabbitsAt(r, c+1) == 0);
+//    }
+//    {
+//        Arena a(20, 20);
+//        assert(a.addPlayer(1, 20));
+//        struct Coord
+//        {
+//            int r;
+//            int c;
+//        };
+//        assert(MAXRABBITS == 100);
+//        const int NDOOMED = 4;
+//        Coord doomed[NDOOMED];
+//        for (int k = 0; k < NDOOMED; k++)
+//        {
+//            doomed[k].r = 3;
+//            doomed[k].c = 5*k+3;
+//            assert(a.addRabbit(doomed[k].r, doomed[k].c));
+//            surroundWithPoison(a, doomed[k].r, doomed[k].c);
+//            for (int i = 0; i < MAXRABBITS/NDOOMED - 1; i++)
+//                assert(a.addRabbit(20, 20));
+//        }
+//        assert(!a.addRabbit(20, 20));
+//        assert(a.rabbitCount() == MAXRABBITS);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == MAXRABBITS);
+//        for (int k = 0; k < NDOOMED; k++)
+//        {
+//            findTheRabbit(a, doomed[k].r, doomed[k].c);
+//            surroundWithPoison(a, doomed[k].r, doomed[k].c);
+//        }
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == MAXRABBITS);
+//        a.moveRabbits();
+//        assert(a.rabbitCount() == MAXRABBITS - NDOOMED);
+//        for (int k = 0; k < NDOOMED; k++)
+//            assert(a.addRabbit(20, 20));
+//        assert(!a.addRabbit(20, 20));
+//          // If the program crashes after leaving this compound statement, you
+//          // are probably messing something up when you delete a rabbit after
+//          // it dies (or you have mis-coded the destructor).
+//          //
+//          // Draw a picture of your m_rabbits array before the rabbits move,
+//          // and also note the values of m_nRabbits or any other variable you
+//          // might have that's involved with the number of rabbits.  Trace
+//          // through your code step by step as the rabbits move and die,
+//          // updating the picture according to what the code says, not what
+//          // you want it to do.  If you don't see a problem then, try tracing
+//          // through the destruction of the arena.
+//          //
+//          // If you execute the code, use the debugger to check on the values
+//          // of key variables at various points.  If you didn't try to learn
+//          // to use the debugger, insert statements that write the values of
+//          // key variables to cerr so you can trace the execution of your code
+//          // and see the first place where something has gone amiss.
+//    }
+//    cout << "Passed all basic tests (as long as when run under g31 there is no further message after this)." << endl;
+//}
