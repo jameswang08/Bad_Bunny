@@ -199,6 +199,7 @@ void Rabbit::move()
         m_hasMoved=false;
         return;
     }
+    //Moves rabbit if the random move goes to a valid position
     if(dir==NORTH){
         if(row()-1>0)m_row-=1;
     }
@@ -211,6 +212,7 @@ void Rabbit::move()
     else if(dir==WEST)
         if(col()-1>0)m_col-=1;
     
+    //Kills rabbit if it eats two poisoned carrots, but also kills player if rabbit lands on player
     if(m_arena->getCellStatus(row(),col())==HAS_POISON){
         m_arena->setCellStatus(row(), col(), EMPTY);
         if(m_poisoned){
@@ -267,6 +269,7 @@ string Player::dropPoisonedCarrot()
 
 string Player::move(int dir)
 {
+    //Moves player if moving into a valid location, otherwise stay stil
     if(attemptMove(*m_arena, dir, m_row, m_col)){
         if(dir==NORTH){
             if(m_arena->numberOfRabbitsAt(m_row, m_col)!=0){
@@ -297,7 +300,7 @@ string Player::move(int dir)
             return "Player moved west.";
         }
     }
-    return "Player couldn't move; player stands.";  // This implementation compiles, but is incorrect.
+    return "Player couldn't move; player stands.";
 }
 
 bool Player::isDead() const
@@ -660,9 +663,10 @@ bool attemptMove(const Arena& a, int dir, int& r, int& c)
 bool recommendMove(const Arena& a, int r, int c, int& bestDir)
 {
     int dangerArr[NUMDIRS] = {};
-    
-    if(dangerLvl(a,r,c)==0) return false;
+
+    if(dangerLvl(a,r,c)==0) return false; //If there is no harm in staying still, stay still
     else{
+        //Calculate how "dangerous" moving to a spot is
         for(int i=0;i<NUMDIRS;i++){
             if(attempt(a, i, r, c)){
                 int r2=0;
@@ -699,33 +703,15 @@ bool recommendMove(const Arena& a, int r, int c, int& bestDir)
         }
         return true;
     }
-    return false;  // This implementation compiles, but is incorrect.
+    return false;
 
-      // Your replacement implementation should do something intelligent.
-      // You don't have to be any smarter than the following, although
-      // you can if you want to be:  If staying put runs the risk of a
-      // rabbit possibly moving onto the player's location when the rabbits
-      // move, yet moving in a particular direction puts the player in a
-      // position that is safe when the rabbits move, then the chosen
-      // action is to move to a safer location.  Similarly, if staying put
-      // is safe, but moving in certain directions puts the player in
-      // danger of dying when the rabbits move, then the chosen action should
-      // not be to move in one of the dangerous directions; instead, the player
-      // should stay put or move to another safe position.  In general, a
-      // position that may be moved to by many rabbits is more dangerous than
-      // one that may be moved to by few.
-      //
-      // Unless you want to, you do not have to take into account that a
-      // rabbit might be poisoned and thus sometimes less dangerous than one
-      // that is not.  That requires a more sophisticated analysis that
-      // we're not asking you to do.
 }
-
+//Calculates how "dangerous" the tiles adjacent to the player are and how "dangerous" it would be for the player to stay still
 int dangerLvl(const Arena& a, int r, int c){
     int danger=0;
     if(attempt(a, NORTH, r, c)){
         if(a.numberOfRabbitsAt(r-1, c)>0){
-            danger+=a.numberOfRabbitsAt(r-1, c)*10;
+            danger+=a.numberOfRabbitsAt(r-1, c)*10; //Multiply by 10 so that in the case of two equally dangerous tiles (there are rabbits at both tiles) program can calculate which tile is more likely to have a rabbit move there, based on the number of rabbits surrounding the checked location
             danger++;
         }
     }
@@ -783,14 +769,6 @@ int main()
 //  clearScreen implementation
 ///////////////////////////////////////////////////////////////////////////
 
-// DO NOT MODIFY OR REMOVE ANYTHING BETWEEN HERE AND THE END OF THE FILE!!!
-// THE CODE IS SUITABLE FOR VISUAL C++, XCODE, AND g++/g31 UNDER LINUX.
-
-// Note to Xcode users:  clearScreen() will just write a newline instead
-// of clearing the window if you launch your program from within Xcode.
-// That's acceptable.  (The Xcode output window doesn't have the capability
-// of being cleared.)
-
 #ifdef _WIN32
 
 #include <windows.h>
@@ -827,179 +805,3 @@ void clearScreen()  // will just write a newline in an Xcode output window
 }
 
 #endif
-
-//#include <type_traits>
-//#include <cassert>
-//
-//#define CHECKTYPE(c, f, r, a)  \
-//    static_assert(std::is_same<decltype(&c::f), r (c::*)a>::value, \
-//       "FAILED: You changed the type of " #c "::" #f);  \
-//    { [[gnu::unused]] auto p = static_cast<r (c::*) a>(&c::f); }
-//
-//void thisFunctionWillNeverBeCalled()
-//{
-//      // If the student deleted or changed the interfaces to the public
-//      // functions, this won't compile.  (This uses magic beyond the scope
-//      // of CS 31.)
-//
-//    Rabbit r(static_cast<Arena*>(0), 1, 1);
-//    CHECKTYPE(Rabbit, row, int, () const);
-//    CHECKTYPE(Rabbit, col, int, () const);
-//    CHECKTYPE(Rabbit, isDead, bool, () const);
-//    CHECKTYPE(Rabbit, move, void, ());
-//
-//    Player p(static_cast<Arena*>(0), 1, 1);
-//    CHECKTYPE(Player, row, int, () const);
-//    CHECKTYPE(Player, col, int, () const);
-//    CHECKTYPE(Player, isDead, bool, () const);
-//    CHECKTYPE(Player, dropPoisonedCarrot, string, ());
-//    CHECKTYPE(Player, move, string, (int));
-//    CHECKTYPE(Player, setDead, void, ());
-//
-//    Arena a(1, 1);
-//    CHECKTYPE(Arena, rows, int, () const);
-//    CHECKTYPE(Arena, cols, int, () const);
-//    CHECKTYPE(Arena, player, Player*, () const);
-//    CHECKTYPE(Arena, rabbitCount, int, () const);
-//    CHECKTYPE(Arena, getCellStatus, int, (int,int) const);
-//    CHECKTYPE(Arena, numberOfRabbitsAt, int, (int,int) const);
-//    CHECKTYPE(Arena, display, void, (string) const);
-//    CHECKTYPE(Arena, setCellStatus, void, (int,int,int));
-//    CHECKTYPE(Arena, addRabbit, bool, (int,int));
-//    CHECKTYPE(Arena, addPlayer, bool, (int,int));
-//    CHECKTYPE(Arena, moveRabbits, void, ());
-//
-//    Game g(1,1,1);
-//    CHECKTYPE(Game, play, void, ());
-//}
-//
-//void findTheRabbit(const Arena& a, int& r, int& c)
-//{
-//    if      (a.numberOfRabbitsAt(r-1, c) == 1) r--;
-//    else if (a.numberOfRabbitsAt(r+1, c) == 1) r++;
-//    else if (a.numberOfRabbitsAt(r, c-1) == 1) c--;
-//    else if (a.numberOfRabbitsAt(r, c+1) == 1) c++;
-//    else assert(false);
-//}
-//
-//void surroundWithPoison(Arena& a, int r, int c)
-//{
-//    a.setCellStatus(r-1, c, HAS_POISON);
-//    a.setCellStatus(r+1, c, HAS_POISON);
-//    a.setCellStatus(r, c-1, HAS_POISON);
-//    a.setCellStatus(r, c+1, HAS_POISON);
-//}
-//
-//void doBasicTests()
-//{
-//    {
-//        Arena a(10, 20);
-//        assert(a.addPlayer(2, 5));
-//        Player* pp = a.player();
-//        assert(pp->row() == 2  &&  pp->col() == 5  && ! pp->isDead());
-//        assert(pp->move(NORTH) == "Player moved north.");
-//        assert(pp->row() == 1  &&  pp->col() == 5  && ! pp->isDead());
-//        assert(pp->move(NORTH) == "Player couldn't move; player stands.");
-//        assert(pp->row() == 1  &&  pp->col() == 5  && ! pp->isDead());
-//        pp->setDead();
-//        assert(pp->row() == 1  &&  pp->col() == 5  && pp->isDead());
-//    }
-//    {
-//        Arena a(10, 20);
-//        int r = 8;
-//        int c = 18;
-//        assert(a.addPlayer(r, c));
-//        for (int k = 0; k < MAXRABBITS/4; k++)
-//        {
-//            assert(a.addRabbit(r-1, c));
-//            assert(a.addRabbit(r+1, c));
-//            assert(a.addRabbit(r, c-1));
-//            assert(a.addRabbit(r, c+1));
-//        }
-//        assert(! a.player()->isDead());
-//        a.moveRabbits();
-//        assert(a.player()->isDead());
-//    }
-//    {
-//        Arena a(10, 20);
-//        int r = 4;
-//        int c = 4;
-//        assert(a.addRabbit(r, c));
-//        surroundWithPoison(a, r, c);
-//        assert(a.addPlayer(8, 18));
-//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 1);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 0);
-//        findTheRabbit(a, r, c);
-//        assert(a.getCellStatus(r, c) != HAS_POISON);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 1);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 0);
-//        findTheRabbit(a, r, c);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == 1  &&  a.numberOfRabbitsAt(r, c) == 1);
-//        surroundWithPoison(a, r, c);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == 0  &&  a.numberOfRabbitsAt(r, c) == 0);
-//        assert(a.numberOfRabbitsAt(r-1, c) == 0);
-//        assert(a.numberOfRabbitsAt(r+1, c) == 0);
-//        assert(a.numberOfRabbitsAt(r, c-1) == 0);
-//        assert(a.numberOfRabbitsAt(r, c+1) == 0);
-//    }
-//    {
-//        Arena a(20, 20);
-//        assert(a.addPlayer(1, 20));
-//        struct Coord
-//        {
-//            int r;
-//            int c;
-//        };
-//        assert(MAXRABBITS == 100);
-//        const int NDOOMED = 4;
-//        Coord doomed[NDOOMED];
-//        for (int k = 0; k < NDOOMED; k++)
-//        {
-//            doomed[k].r = 3;
-//            doomed[k].c = 5*k+3;
-//            assert(a.addRabbit(doomed[k].r, doomed[k].c));
-//            surroundWithPoison(a, doomed[k].r, doomed[k].c);
-//            for (int i = 0; i < MAXRABBITS/NDOOMED - 1; i++)
-//                assert(a.addRabbit(20, 20));
-//        }
-//        assert(!a.addRabbit(20, 20));
-//        assert(a.rabbitCount() == MAXRABBITS);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == MAXRABBITS);
-//        for (int k = 0; k < NDOOMED; k++)
-//        {
-//            findTheRabbit(a, doomed[k].r, doomed[k].c);
-//            surroundWithPoison(a, doomed[k].r, doomed[k].c);
-//        }
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == MAXRABBITS);
-//        a.moveRabbits();
-//        assert(a.rabbitCount() == MAXRABBITS - NDOOMED);
-//        for (int k = 0; k < NDOOMED; k++)
-//            assert(a.addRabbit(20, 20));
-//        assert(!a.addRabbit(20, 20));
-//          // If the program crashes after leaving this compound statement, you
-//          // are probably messing something up when you delete a rabbit after
-//          // it dies (or you have mis-coded the destructor).
-//          //
-//          // Draw a picture of your m_rabbits array before the rabbits move,
-//          // and also note the values of m_nRabbits or any other variable you
-//          // might have that's involved with the number of rabbits.  Trace
-//          // through your code step by step as the rabbits move and die,
-//          // updating the picture according to what the code says, not what
-//          // you want it to do.  If you don't see a problem then, try tracing
-//          // through the destruction of the arena.
-//          //
-//          // If you execute the code, use the debugger to check on the values
-//          // of key variables at various points.  If you didn't try to learn
-//          // to use the debugger, insert statements that write the values of
-//          // key variables to cerr so you can trace the execution of your code
-//          // and see the first place where something has gone amiss.
-//    }
-//    cout << "Passed all basic tests (as long as when run under g31 there is no further message after this)." << endl;
-//}
